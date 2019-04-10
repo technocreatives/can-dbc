@@ -92,14 +92,14 @@ fn to_enum_name(message_id: &MessageId, signal_name: &str) -> String {
     format!("{}{}", &signal_name.to_camel_case(), message_id.0)
 }
 
-pub fn signal_enum(val_desc: &ValueDescription, signal_map: &HashMap<(&MessageId, &String), &Signal>) -> Option<Enum> {
+pub fn signal_enum(val_desc: &ValueDescription, signal_map: &HashMap<(MessageId, String), &Signal>) -> Option<Enum> {
     if let ValueDescription::Signal {
         message_id,
         signal_name,
         ref value_descriptions,
     } = val_desc
     {
-        let signal = signal_map.get(&(message_id, signal_name)).expect("Signal unknown");
+        let signal = signal_map.get(&(*message_id, signal_name.to_string())).expect("Signal unknown");
         let signal_type = signal_return_type(signal);
         let mut sig_enum = Enum::new(&to_enum_name(message_id, signal_name));
         sig_enum.allow("dead_code");
@@ -118,14 +118,14 @@ pub fn signal_enum(val_desc: &ValueDescription, signal_map: &HashMap<(&MessageId
     None
 }
 
-pub fn signal_enum_impl_from(val_desc: &ValueDescription, signal_map: &HashMap<(&MessageId, &String), &Signal>) -> Option<Impl> {
+pub fn signal_enum_impl_from(val_desc: &ValueDescription, signal_map: &HashMap<(MessageId, String), &Signal>) -> Option<Impl> {
     if let ValueDescription::Signal {
-        ref message_id,
-        ref signal_name,
+        message_id,
+        signal_name,
         ref value_descriptions,
     } = val_desc
     {
-        let signal = signal_map.get(&(message_id, signal_name)).expect("Signal unknown");
+        let signal = signal_map.get(&(*message_id, signal_name.to_string())).expect("Signal unknown");
         let signal_type = signal_return_type(signal);
         let enum_name = to_enum_name(message_id, signal_name);
         let mut enum_impl = Impl::new(codegen::Type::new(&enum_name));
@@ -406,7 +406,7 @@ pub fn can_code_gen(opt: &DbccOpt, dbc: &DBC) -> Result<Scope> {
 
     for message in dbc.messages() {
         for signal in message.signals() {
-            signal_map.insert((message.message_id(), signal.name()), signal);
+            signal_map.insert((*message.message_id(), signal.name().to_string()), signal);
         }
     }
 
