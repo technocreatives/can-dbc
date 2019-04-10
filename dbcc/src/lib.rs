@@ -136,7 +136,7 @@ pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
         for value_description in value_descriptions {
             write!(
                 &mut matching,
-                "    {} => {}::{},\n",
+                "    {}f64 => {}::{},\n",
                 value_description.a(),
                 enum_name,
                 value_description.b().to_camel_case().to_type_name()
