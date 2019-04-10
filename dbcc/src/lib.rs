@@ -110,7 +110,8 @@ pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
         for desc in value_descriptions {
             sig_enum.new_variant(&desc.b().to_camel_case().to_type_name());
         }
-        sig_enum.new_variant("XValue(u64)");
+        // The value is the default value if there is no entry in the value descriptions
+        sig_enum.new_variant("XValue(f64)");
         return Some(sig_enum);
     }
     None
@@ -146,7 +147,7 @@ pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
         }
         write!(
             &mut matching,
-            "    value => {}::XValue(value),\n",
+            "    value => {}::XValue(value as f64),\n",
             enum_name
         )
         .unwrap();
