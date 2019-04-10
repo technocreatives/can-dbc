@@ -143,9 +143,10 @@ pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
             )
             .unwrap();
         }
+        // Cast through integers first for boolean values
         write!(
             &mut matching,
-            "    value => {}::XValue(value as f64),\n",
+            "    value => {}::XValue(value as u64 as f64),\n",
             enum_name
         )
         .unwrap();
@@ -212,7 +213,7 @@ pub fn signal_fn_enum(signal: &Signal, enum_type: String) -> Result<Function> {
     let raw_fn_name = format!("{}_{}", signal.name().to_lowercase(), RAW_FN_SUFFIX);
 
     signal_fn.line(format!(
-        "{}::from(self.{}() as f64)",
+        "{}::from(self.{}() as u64 as f64)",
         enum_type, raw_fn_name
     ));
 
