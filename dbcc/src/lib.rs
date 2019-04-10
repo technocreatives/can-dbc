@@ -106,7 +106,6 @@ pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
         sig_enum.derive("Clone");
         sig_enum.derive("Copy");
         sig_enum.derive("PartialEq");
-        sig_enum.derive("Eq");
         for desc in value_descriptions {
             sig_enum.new_variant(&desc.b().to_camel_case().to_type_name());
         }
