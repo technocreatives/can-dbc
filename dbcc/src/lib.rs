@@ -8,6 +8,7 @@ use codegen::{Enum, Function, Impl, Scope, Struct};
 use heck::{CamelCase, ShoutySnakeCase};
 use log::warn;
 use socketcan::{SFF_MASK, EFF_MASK};
+use std::collections::HashMap;
 
 use std::fmt::Write;
 
@@ -91,17 +92,18 @@ fn to_enum_name(message_id: &MessageId, signal_name: &str) -> String {
     format!("{}{}", &signal_name.to_camel_case(), message_id.0)
 }
 
-pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
+pub fn signal_enum(val_desc: &ValueDescription, signal_map: &HashMap<(&MessageId, &String), &Signal>) -> Option<Enum> {
     if let ValueDescription::Signal {
-        ref message_id,
-        ref signal_name,
+        message_id,
+        signal_name,
         ref value_descriptions,
     } = val_desc
     {
+        let signal = signal_map.get(&(message_id, signal_name)).expect("Signal unknown");
+        let signal_type = signal_return_type(signal);
         let mut sig_enum = Enum::new(&to_enum_name(message_id, signal_name));
         sig_enum.allow("dead_code");
         sig_enum.vis("pub");
-        sig_enum.repr("u64");
         sig_enum.derive("Debug");
         sig_enum.derive("Clone");
         sig_enum.derive("Copy");
@@ -110,19 +112,21 @@ pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
             sig_enum.new_variant(&desc.b().to_camel_case().to_type_name());
         }
         // The value is the default value if there is no entry in the value descriptions
-        sig_enum.new_variant("XValue(f64)");
+        sig_enum.new_variant(&format!("XValue({})", signal_type));
         return Some(sig_enum);
     }
     None
 }
 
-pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
+pub fn signal_enum_impl_from(val_desc: &ValueDescription, signal_map: &HashMap<(&MessageId, &String), &Signal>) -> Option<Impl> {
     if let ValueDescription::Signal {
         ref message_id,
         ref signal_name,
         ref value_descriptions,
     } = val_desc
     {
+        let signal = signal_map.get(&(message_id, signal_name)).expect("Signal unknown");
+        let signal_type = signal_return_type(signal);
         let enum_name = to_enum_name(message_id, signal_name);
         let mut enum_impl = Impl::new(codegen::Type::new(&enum_name));
         enum_impl.impl_trait("From<u64>");
@@ -146,8 +150,9 @@ pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
         }
         write!(
             &mut matching,
-            "    value => {}::XValue(value as f64),\n",
-            enum_name
+            "    value => {}::XValue(value as {}),\n",
+            enum_name,
+            signal_type,
         )
         .unwrap();
         write!(&mut matching, "}}").unwrap();
@@ -397,12 +402,21 @@ pub fn can_code_gen(opt: &DbccOpt, dbc: &DBC) -> Result<Scope> {
         scope.raw(&message_const(message));
     }
 
+    let mut signal_map = HashMap::new();
+
+    for message in dbc.messages() {
+        for signal in message.signals() {
+            signal_map.insert((message.message_id(), signal.name()), signal);
+        }
+    }
+
     for value_description in dbc.value_descriptions() {
-        if let Some(signal_enum) = signal_enum(value_description) {
+    let signal_map = HashMap::new();
+        if let Some(signal_enum) = signal_enum(value_description, &signal_map) {
             scope.push_enum(signal_enum);
         }
 
-        if let Some(enum_impl) = signal_enum_impl_from(value_description) {
+        if let Some(enum_impl) = signal_enum_impl_from(value_description, &signal_map) {
             scope.push_impl(enum_impl);
         }
     }
