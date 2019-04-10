@@ -101,7 +101,6 @@ pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
         let mut sig_enum = Enum::new(&to_enum_name(message_id, signal_name));
         sig_enum.allow("dead_code");
         sig_enum.vis("pub");
-        sig_enum.repr("f64");
         sig_enum.derive("Debug");
         sig_enum.derive("Clone");
         sig_enum.derive("Copy");
