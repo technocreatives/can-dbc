@@ -101,12 +101,11 @@ pub fn signal_enum(val_desc: &ValueDescription) -> Option<Enum> {
         let mut sig_enum = Enum::new(&to_enum_name(message_id, signal_name));
         sig_enum.allow("dead_code");
         sig_enum.vis("pub");
-        sig_enum.repr("u64");
+        sig_enum.repr("f64");
         sig_enum.derive("Debug");
         sig_enum.derive("Clone");
         sig_enum.derive("Copy");
         sig_enum.derive("PartialEq");
-        sig_enum.derive("Eq");
         for desc in value_descriptions {
             sig_enum.new_variant(&desc.b().to_camel_case().to_type_name());
         }
@@ -126,11 +125,11 @@ pub fn signal_enum_impl_from(val_desc: &ValueDescription) -> Option<Impl> {
     {
         let enum_name = to_enum_name(message_id, signal_name);
         let mut enum_impl = Impl::new(codegen::Type::new(&enum_name));
-        enum_impl.impl_trait("From<u64>");
+        enum_impl.impl_trait("From<f64>");
 
         let from_fn = enum_impl.new_fn("from");
         from_fn.allow("dead_code");
-        from_fn.arg("val", codegen::Type::new("u64"));
+        from_fn.arg("val", codegen::Type::new("f64"));
         from_fn.ret(codegen::Type::new("Self"));
 
         let mut matching = String::new();
@@ -214,7 +213,7 @@ pub fn signal_fn_enum(signal: &Signal, enum_type: String) -> Result<Function> {
     let raw_fn_name = format!("{}_{}", signal.name().to_lowercase(), RAW_FN_SUFFIX);
 
     signal_fn.line(format!(
-        "{}::from(self.{}() as u64)",
+        "{}::from(self.{}() as f64)",
         enum_type, raw_fn_name
     ));
 
