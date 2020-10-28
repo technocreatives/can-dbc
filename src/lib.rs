@@ -271,6 +271,22 @@ pub enum Error<'a> {
     NomError(nom::Err<nom::types::CompleteByteSlice<'a>, u32>),
 }
 
+use std::fmt;
+impl<'a> fmt::Display for Error<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::Incomplete(_, remaining) => write!(
+                f,
+                "could not parse full file, {} bytes left",
+                remaining.len()
+            ),
+            Error::NomError(e) => write!(f, "could not parse file: {}", e),
+        }
+    }
+}
+
+impl<'a> std::error::Error for Error<'a> {}
+
 /// Baudrate of network in kbit/s
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
